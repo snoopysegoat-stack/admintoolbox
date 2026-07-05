@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verwaltungs-Toolbox &middot; Civic Roleplay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sand:#FFF7EC;
+    --card:#FFFFFF;
+    --ink:#3A2A4D;
+    --ink-soft:#7C6B93;
+    --ink-faint:#B3A6C4;
+    --line:#F1DFC5;
+
+    --sunset1:#7B5EA3;
+    --sunset2:#F0577A;
+    --sunset3:#FFB56B;
+    --gradient: linear-gradient(135deg, var(--sunset1), var(--sunset2) 55%, var(--sunset3));
+
+    --ban:#E85D6B;   --ban-bg:#FCE6E8;
+    --jail:#1FAFA6;  --jail-bg:#DFF6F3;
+    --warn:#F2984A;  --warn-bg:#FDECD9;
+    --unknown:#8067AC; --unknown-bg:#EFE7F7;
+
+    --ocean-dark:#123B40;
+
+    --font-display:'Fredoka', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 1px 1px, rgba(58,42,77,0.05) 1px, transparent 0) 0 0/22px 22px,
+      linear-gradient(180deg, #FFE3CE 0%, var(--sand) 380px);
+    color:var(--ink);
+    font-family:var(--font-body);
+    min-height:100vh;
+  }
+
+  /* ---------- Gate ---------- */
+  #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .gate-card{
+    background:var(--card);border:1px solid var(--line);border-radius:22px;
+    padding:40px 36px;max-width:380px;width:100%;text-align:center;
+    box-shadow:0 14px 40px rgba(58,42,77,0.10);
+  }
+  .gate-seal{width:64px;height:64px;margin:0 auto 18px;border-radius:50%;display:block;object-fit:cover;box-shadow:0 4px 14px rgba(58,42,77,0.18);}
+  .gate-card h1{font-family:var(--font-display);font-weight:600;font-size:23px;margin:0 0 6px;}
+  .gate-card p{color:var(--ink-soft);font-size:14px;margin:0 0 22px;line-height:1.5;}
+  .gate-card input{
+    width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;
+    font-family:var(--font-mono);font-size:14px;background:var(--sand);color:var(--ink);margin-bottom:12px;
+  }
+  .gate-card input:focus{outline:2px solid var(--jail);outline-offset:1px;}
+  .gate-card button{
+    width:100%;padding:12px 14px;border:none;border-radius:12px;background:var(--gradient);
+    color:#fff;font-family:var(--font-display);font-weight:500;font-size:15px;cursor:pointer;
+  }
+  .gate-card button:hover{filter:brightness(1.05);}
+  #gate-error{color:var(--ban);font-size:13px;margin-top:10px;min-height:16px;}
+
+  /* ---------- App shell ---------- */
+  #app{display:none;min-height:100vh;}
+  #app.visible{display:flex;flex-direction:column;}
+
+  header.topbar{padding:20px 32px;display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:13px;}
+  .brand-seal{width:44px;height:44px;border-radius:50%;display:block;object-fit:cover;box-shadow:0 4px 12px rgba(58,42,77,0.15);}
+  .brand-text .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);font-weight:500;}
+  .brand-text h1{font-family:var(--font-display);font-weight:600;font-size:20px;margin:0;color:var(--ink);}
+  .logout{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);font-size:13px;padding:9px 16px;border-radius:10px;cursor:pointer;}
+  .logout:hover{background:var(--sand);color:var(--ink);}
+
+  .wave{width:100%;height:28px;display:block;margin-bottom:8px;}
+
+  .layout{flex:1;display:flex;justify-content:center;padding:16px 24px 40px;}
+
+  /* ---------- Main panel ---------- */
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px;
+    box-shadow:0 10px 30px rgba(58,42,77,0.06);max-width:520px;width:100%;height:fit-content;
+  }
+  .panel h2{font-family:var(--font-display);font-weight:600;font-size:20px;margin:0 0 4px;}
+  .panel .sub{font-size:13px;color:var(--ink-faint);margin:0 0 22px;}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12.5px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;}
+  .field input{
+    width:100%;padding:10px 13px;border:1px solid var(--line);border-radius:11px;
+    font-family:var(--font-body);font-size:14px;background:var(--sand);color:var(--ink);
+  }
+  .field input:focus{outline:2px solid var(--jail);outline-offset:1px;}
+  .field input[readonly]{background:var(--jail-bg);color:var(--ink-soft);border-color:transparent;}
+  .hint{font-size:12px;color:var(--ink-faint);margin-top:6px;line-height:1.5;}
+  .hint b{color:var(--ink-soft);font-weight:500;}
+
+  /* ---------- Erkannter Typ / Auswahl ---------- */
+  .type-detect{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13.5px;font-weight:500;
+  }
+  .type-detect .type-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .type-detect .change-link{
+    margin-left:auto;background:none;border:none;color:var(--ink-faint);font-size:12px;
+    text-decoration:underline;cursor:pointer;font-family:var(--font-body);
+  }
+  .type-picker{display:none;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .type-picker.visible{display:flex;}
+  .type-pill{
+    border:1.5px solid var(--line);background:var(--sand);color:var(--ink-soft);
+    border-radius:10px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;
+    font-family:var(--font-body);display:flex;align-items:center;gap:8px;
+  }
+  .type-pill .dot{width:8px;height:8px;border-radius:50%;}
+  .type-pill:hover{border-color:var(--ink-faint);}
+  .type-pill.active{border-color:transparent;color:#fff;}
+
+  /* ---------- Command output ---------- */
+  .cmd-box{background:var(--ocean-dark);border-radius:16px;padding:17px 19px;margin-top:8px;display:flex;align-items:center;gap:12px;}
+  .cmd-text{flex:1;font-family:var(--font-mono);font-size:14px;color:#EAF7F5;word-break:break-all;}
+  .cmd-text .ph{color:#5D9490;}
+  .copy-btn{
+    flex-shrink:0;padding:10px 18px;border:none;border-radius:10px;background:var(--sunset3);
+    color:#4A2A0E;font-family:var(--font-display);font-weight:500;font-size:13px;cursor:pointer;
+  }
+  .copy-btn:hover{filter:brightness(1.06);}
+  .copy-btn.copied{background:#7ED9A6;color:#0E4A2A;}
+
+  footer.foot{text-align:center;font-size:12px;color:var(--ink-faint);padding:26px;}
+
+  @media (max-width:600px){
+    header.topbar{padding:18px 20px 4px;}
+    .layout{padding:12px 16px 30px;}
+    .panel{padding:22px;}
+    .cmd-box{flex-direction:column;align-items:stretch;}
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <img class="gate-seal" src="logo.webp" alt="Civic Roleplay Logo">
+    <h1>Verwaltungs-Toolbox</h1>
+    <p>Zugang nur für Admins des Civic-Roleplay-Servers. Bitte Zugangscode eingeben.</p>
+    <input type="password" id="gate-input" placeholder="Zugangscode" autocomplete="off">
+    <button id="gate-submit">Zugang bestätigen</button>
+    <div id="gate-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-seal" src="logo.webp" alt="Civic Roleplay Logo">
+      <div class="brand-text">
+        <div class="eyebrow">Verwaltung &middot; Ordnungsamt</div>
+        <h1>Command-Toolbox</h1>
+      </div>
+    </div>
+    <button class="logout" id="logout-btn">Abmelden</button>
+  </header>
+
+  <svg class="wave" viewBox="0 0 880 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,14 C110,26 220,2 330,14 C440,26 550,2 660,14 C770,26 830,10 880,14 L880,28 L0,28 Z" fill="url(#waveGrad)"/>
+    <defs>
+      <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#7B5EA3" stop-opacity="0.35"/>
+        <stop offset="55%" stop-color="#F0577A" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#FFB56B" stop-opacity="0.35"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="layout">
+    <main class="panel">
+      <h2 id="panel-title">Maßnahme erfassen</h2>
+      <p class="sub">Perm-ID eintragen, Regel suchen — Typ und Command werden automatisch erkannt.</p>
+
+      <div class="field">
+        <label for="permid">Perm-ID</label>
+        <input type="text" id="permid" placeholder="z. B. 42">
+      </div>
+
+      <div class="field">
+        <label for="rule-search">Regel</label>
+        <input type="text" id="rule-search" list="rules-list" placeholder="Regel suchen — z. B. 4.1 oder Cheats" autocomplete="off">
+        <datalist id="rules-list"></datalist>
+        <div class="hint" id="rule-hint">Noch keine Regel ausgewählt.</div>
+      </div>
+
+      <div class="type-detect" id="type-detect" style="display:none;"></div>
+      <div class="type-picker" id="type-picker"></div>
+
+      <div class="field" id="duration-wrap" style="display:none;">
+        <label id="duration-label">Dauer</label>
+        <input type="text" id="duration-input">
+        <div class="hint" id="duration-hint"></div>
+      </div>
+
+      <div class="field">
+        <label for="extra">Zusatzinfo (optional)</label>
+        <input type="text" id="extra" placeholder="z. B. 2. Verstoß">
+      </div>
+
+      <div class="cmd-box">
+        <div class="cmd-text" id="cmd-text">/ban <span class="ph">[permid]</span> <span class="ph">[dauer]</span> <span class="ph">[grund]</span></div>
+        <button class="copy-btn" id="copy-btn">Kopieren</button>
+      </div>
+    </main>
+  </div>
+
+  <footer class="foot">Nur für internen Gebrauch &middot; nichts wird gespeichert</footer>
+</div>
+
+<script>
+  /* ============ ZUGANG ============
+     Rein clientseitige Prüfung ohne echte Sicherheit (Quelltext einsehbar).
+     Vor Veröffentlichung unbedingt ändern. */
+  const ADMIN_PASSWORD = "ordnungsamt2026";
+
+  const gate = document.getElementById('gate');
+  const app = document.getElementById('app');
+  const gateInput = document.getElementById('gate-input');
+  const gateSubmit = document.getElementById('gate-submit');
+  const gateError = document.getElementById('gate-error');
+
+  function unlock(){ gate.style.display = 'none'; app.classList.add('visible'); }
+  function tryLogin(){
+    if(gateInput.value === ADMIN_PASSWORD){
+      sessionStorage.setItem('cr_admin_unlocked','1');
+      unlock();
+    } else {
+      gateError.textContent = 'Falscher Zugangscode. Bitte erneut versuchen.';
+      gateInput.value = ''; gateInput.focus();
+    }
+  }
+  gateSubmit.addEventListener('click', tryLogin);
+  gateInput.addEventListener('keydown', e => { if(e.key === 'Enter') tryLogin(); });
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    sessionStorage.removeItem('cr_admin_unlocked'); location.reload();
+  });
+  if(sessionStorage.getItem('cr_admin_unlocked') === '1'){ unlock(); }
+
+  /* ============ TYPEN ============ */
+  const TYPES = {
+    jail: {label:'Jail', color:'var(--jail)', bg:'var(--jail-bg)', syntax:'/jail [permid] [zeit(in min)] [grund]', unit:'Min', durationLabel:'Zeit (Minuten)'},
+    warn: {label:'Verwarnung', color:'var(--warn)', bg:'var(--warn-bg)', syntax:'/warn [permid] [grund]', unit:null, durationLabel:''},
+    ban:  {label:'Bann', color:'var(--ban)', bg:'var(--ban-bg)', syntax:'/ban [permid] [dauer(in tagen)] [grund]', unit:'Tage', durationLabel:'Dauer (Tage)'}
+  };
+  const PERMANENT_DAYS = 9999;
+
+  /* ============ REGELWERK ============
+     Jede Regel hat "options": mögliche Maßnahmen laut Regelwerk.
+     1 Option  -> wird automatisch erkannt.
+     >1 Option -> Admin muss zwischen den Optionen wählen.
+     0 Optionen (nur Mute o.ä. hinterlegt) -> Admin muss Typ frei wählen. */
+  const CATEGORIES = [
+    { id:'allg', abbrev:'Allg.', label:'Allgemeines Regelwerk', rules:[
+      {num:'1.1', desc:'Account teilen/verkaufen', options:[{type:'ban', duration:PERMANENT_DAYS}], note:'Permanenter Bann'},
+      {num:'1.3', desc:'Betrug gegenüber Spielern', options:[{type:'ban', duration:PERMANENT_DAYS}], note:'Permanenter Bann'},
+      {num:'1.4', desc:'Twinking (Zusatzaccount)', options:[{type:'ban', duration:60}], note:'Zusatzaccount permanent (9999), Hauptaccount 60 Tage'},
+      {num:'1.5', desc:'Mehr als ein Business', options:[{type:'ban', duration:30}]},
+      {num:'1.6', desc:'Handel Spieleigentum gg. Echtgeld', options:[{type:'ban', duration:PERMANENT_DAYS}], note:'Permanenter Bann'},
+      {num:'1.7', desc:'Verschenken über 5.000.000$', options:[{type:'ban', duration:60}]},
+      {num:'1.8', desc:'Interaktion Haupt-/Twinkaccount', options:[{type:'ban', duration:PERMANENT_DAYS}], note:'Permanente Sperre beider Accounts'},
+      {num:'1.9', desc:'Steuerumgehung', options:[{type:'ban', duration:60}]},
+      {num:'2.1', desc:'Unrealistischer Ingame-Name', options:[{type:'jail', duration:10}], note:'+ Namensänderung erforderlich'},
+      {num:'3.1', desc:'OOC-Beleidigung', options:[{type:'ban', range:[1,7]}], note:'alternativ Mute 180 Min (kein Command hinterlegt)'},
+      {num:'3.2', desc:'Erwähnung Familienangehörige', options:[{type:'ban', range:[1,7]}], note:'alternativ Mute 180 Min (kein Command hinterlegt)'},
+      {num:'3.3', desc:'Falsche Sprache im Chat', options:[], note:'Regelwerk sieht nur Mute vor (kein Command hinterlegt) — Typ bitte manuell wählen'},
+      {num:'4.1', desc:'Cheats / externe Software', options:[{type:'ban', range:[60,PERMANENT_DAYS]}]},
+      {num:'5.1', desc:'Report-Missbrauch', options:[], note:'Regelwerk sieht nur Mute vor (kein Command hinterlegt) — Typ bitte manuell wählen'},
+      {num:'5.3', desc:'Beleidigung Administration', options:[{type:'ban', duration:7}]},
+      {num:'6.2', desc:'RP-Situation verlassen (AFK)', options:[{type:'warn'}]},
+      {num:'6.3', desc:'Org-/Familienlager geleert', options:[{type:'ban', duration:PERMANENT_DAYS}], note:'Permanenter Bann'},
+      {num:'6.4', desc:'Bad-Angestellter ohne Biografie', options:[{type:'warn'}]},
+      {num:'6.5', desc:'Kriminelle Handlung gg. EMS', options:[{type:'warn'}]},
+      {num:'6.6', desc:'Heilen/Looten in Schießerei', options:[{type:'jail', duration:60}]},
+      {num:'6.7', desc:'Rückkehr ins Kampfgebiet (<15 Min)', options:[{type:'warn'}]},
+      {num:'6.8', desc:'Handlung an Bewusstlosen', options:[{type:'ban', range:[3,7]}]},
+      {num:'6.9', desc:'Sexuelle Handlungen', options:[{type:'ban', range:[3,7]}]},
+      {num:'6.10', desc:'IC-Inhalte in OOC übertragen', options:[{type:'ban', range:[1,7]}]},
+      {num:'6.11', desc:'Twink falsche Fraktionsrichtung', options:[{type:'warn'}]},
+      {num:'6.12', desc:'Belästigung EMS', options:[{type:'ban', range:[1,7]}]},
+      {num:'6.13', desc:'Mercy Killing', options:[{type:'jail', duration:120},{type:'warn'}]},
+      {num:'6.14', desc:'Unerlaubter Raub-Loot', options:[{type:'ban', range:[1,7]}]},
+      {num:'6.15', desc:'Kein RP außerhalb Ghetto/Stadt', options:[{type:'warn'}]},
+      {num:'6.16', desc:'Fahrzeugüberfall ohne Mindestanzahl', options:[{type:'jail', duration:120},{type:'warn'}]},
+      {num:'6.18', desc:'Heli zu unzugänglichem Dach', options:[{type:'jail', duration:120}]},
+      {num:'6.19', desc:'Beleidigung (H-/N-Wort)', options:[{type:'ban', range:[1,3]}]},
+      {num:'6.20', desc:'Muten zur RP-Vermeidung', options:[{type:'warn'}]},
+      {num:'6.21', desc:'Missbrauch gepanzerter Fahrzeuge', options:[{type:'warn'}]},
+      {num:'6.23', desc:'Bugusing', options:[{type:'ban', range:[60,PERMANENT_DAYS]}]},
+      {num:'6.24', desc:'Überfall auf Anfängerjobs', options:[{type:'warn'}]},
+      {num:'6.25', desc:'Überfall Fort-Zancudo-Gebiet', options:[{type:'warn'}]},
+      {num:'6.26', desc:'Missbrauch EMS-Kleidung', options:[{type:'warn'},{type:'ban', range:[1,7]}], note:'Warn bis Bann 7 Tage'},
+      {num:'6.27', desc:'Schmuggelmaschine verstecken', options:[{type:'ban', range:[1,3]}]},
+      {num:'6.29', desc:'Wiederholte Regelverstöße', options:[{type:'ban', range:[1,30]}]},
+      {num:'6.30', desc:'Geschlechtswechsel ohne Biografie', options:[{type:'jail', duration:60}], note:'+ Geschlechtsänderung'},
+      {num:'7.4', desc:'Metagaming', options:[{type:'jail', range:[60,180]}], note:'alternativ Mute 60–180 Min (kein Command hinterlegt)'},
+      {num:'7.5', desc:'Powergaming', options:[{type:'jail', range:[120,180]}]},
+      {num:'7.6', desc:'Deathmatch', options:[{type:'jail', range:[120,180]},{type:'warn'}]},
+      {num:'7.7', desc:'UN-RP', options:[{type:'jail', range:[120,180]},{type:'warn'}]},
+      {num:'7.8', desc:'Revenge Killing', options:[{type:'jail', duration:120}]},
+      {num:'7.9', desc:'Car Ramming', options:[{type:'jail', range:[120,180]},{type:'warn'}]},
+      {num:'7.10', desc:'Baiting', options:[{type:'jail', range:[120,180]}]},
+      {num:'7.11', desc:'Fail-RP', options:[{type:'warn'}]}
+    ]},
+    { id:'legal', abbrev:'Legal', label:'Legale Organisationsregeln', rules:[
+      {num:'1.15', desc:'Looten in Schießerei (Staatsdiener)', options:[{type:'jail', duration:120}]},
+      {num:'1.16', desc:'Rennen mit gefesselter Person', options:[{type:'jail', duration:120}]},
+      {num:'1.17', desc:'Schießen aus gepanzertem Fahrzeug', options:[{type:'jail', duration:120}]},
+      {num:'1.18', desc:'Bewusstlose in Schießerei versorgt', options:[{type:'jail', duration:120}]},
+      {num:'1.20', desc:'Gesetzesänderung ohne Absprache', options:[{type:'warn'}]},
+      {num:'5.4', desc:'Festnahme während Schießerei', options:[{type:'warn'}], note:'mündlicher Warn'},
+      {num:'5.5', desc:'Ghetto-Patrouille Mindestanzahl', options:[{type:'warn'}], note:'mündlicher Warn'},
+      {num:'5.6', desc:'Festnahme ohne Videobeleg', options:[{type:'warn'}], note:'mündlicher Warn'},
+      {num:'5.11', desc:'Dienstfahrzeug privat genutzt', options:[{type:'warn'}], note:'mündlicher Warn'},
+      {num:'5.12', desc:'EMS-Fahrzeug aufgehalten', options:[{type:'jail', duration:120}]}
+    ]},
+    { id:'gz', abbrev:'GZ', label:'Greenzoneregeln', rules:[
+      {num:'1.1', desc:'Töten/Verletzen in Greenzone', options:[{type:'warn'}]},
+      {num:'1.2', desc:'Waffen-/Drogenhandel in Greenzone', options:[{type:'warn'}]},
+      {num:'1.3', desc:'Entführen/Ausrauben in Greenzone', options:[{type:'warn'}]},
+      {num:'1.4', desc:'Flucht in Greenzone', options:[{type:'warn'}]}
+    ]},
+    { id:'event', abbrev:'Event', label:'Event-Regeln', rules:[
+      {num:'4.1', desc:'Teaming', options:[{type:'jail', duration:120}]},
+      {num:'4.2', desc:'Handlung im Eventzeitfenster', options:[{type:'warn'}]},
+      {num:'4.3', desc:'Eventgebiet vor Beginn betreten', options:[{type:'jail', duration:120}]},
+      {num:'4.4', desc:'MG/Scharfschützengewehr bei Event', options:[{type:'jail', duration:120}]},
+      {num:'4.5', desc:'Keine POV vorhanden', options:[{type:'ban', duration:30}]},
+      {num:'4.6', desc:'Familienmitglieder getauscht', options:[{type:'warn'}]},
+      {num:'4.7', desc:'Durchgänge blockiert', options:[{type:'jail', duration:120}]},
+      {num:'4.8', desc:'Schüsse von außerhalb Eventgebiet', options:[{type:'jail', duration:120}]},
+      {num:'4.10', desc:'Highground vorab eingenommen', options:[{type:'jail', duration:120}]},
+      {num:'4.11', desc:'Fallschirm-Nutzung (Bug-Abuse)', options:[{type:'ban', range:[1,30]}]},
+      {num:'4.12', desc:'Teilnehmerlimit überschritten', options:[{type:'jail', duration:180}]},
+      {num:'4.13', desc:'Überfall nicht ausgespielt', options:[{type:'jail', duration:180}]},
+      {num:'4.14', desc:'Mehr als 2 Geiseln', options:[{type:'warn'}]},
+      {num:'4.17', desc:'Waffen aus Lager während Purge', options:[{type:'ban', duration:30}]},
+      {num:'4.18', desc:'Angriff während Interieur lädt', options:[{type:'warn'}]},
+      {num:'4.19', desc:'Beschuss im Wasser (Flugzeugträger)', options:[{type:'warn'}]},
+      {num:'4.20', desc:'Gegenseitiges Töten (Familien-Event)', options:[{type:'jail', duration:120}]},
+      {num:'4.21', desc:'Dächer besetzen (Fort-Zancudo-Event)', options:[{type:'jail', duration:120}]},
+      {num:'4.22', desc:'Dächer besetzen (U-Boot-Event)', options:[{type:'jail', duration:120}]}
+    ]},
+    { id:'ghetto', abbrev:'Ghetto', label:'Ghetto-Regeln', rules:[
+      {num:'1.2', desc:'Gang-Regeln im HQ missachtet', options:[{type:'warn'}]},
+      {num:'1.3', desc:'Betreten Gang-HQ ohne Grund', options:[{type:'warn'}]},
+      {num:'1.4', desc:'Angriff im fremden HQ ohne Erlaubnis', options:[{type:'warn'}]},
+      {num:'1.5', desc:'Schießen aus eigenem HQ', options:[{type:'warn'}]},
+      {num:'1.6', desc:'HQ zu früh wiederbetreten', options:[{type:'warn'}]},
+      {num:'1.7', desc:'Gangfarben nicht getragen', options:[{type:'jail', duration:180}]},
+      {num:'1.8', desc:'Überfall/Entführung außerhalb Ghetto', options:[{type:'warn'}]},
+      {num:'1.11', desc:'Zwang zu Animationen', options:[{type:'warn'}]},
+      {num:'1.12', desc:'Tötung trotz erfüllter Forderung', options:[{type:'jail', duration:120}]},
+      {num:'1.13', desc:'Fort-Zancudo-Überfall nicht angekündigt', options:[{type:'warn'}]},
+      {num:'1.14', desc:'Cooldown Fort Zancudo missachtet', options:[{type:'warn'}]},
+      {num:'2.21', desc:'Gebäude betreten während Turf', options:[{type:'jail', duration:120}]},
+      {num:'2.22', desc:'Gebiet verlassen während Turf', options:[{type:'jail', duration:120}]},
+      {num:'2.23', desc:'Befahren mit Fahrzeug (Turf)', options:[{type:'warn'}]},
+      {num:'2.24', desc:'Säfte nutzen (Turf)', options:[{type:'ban', range:[1,7]}]},
+      {num:'2.25', desc:'Right-Peek Ausnutzung (Turf)', options:[{type:'ban', duration:7}]},
+      {num:'2.27', desc:'POV nicht bereitgestellt (Turf)', options:[{type:'ban', duration:7}]}
+    ]}
+  ];
+
+  const RULES = [];
+  CATEGORIES.forEach(cat => {
+    cat.rules.forEach(r => {
+      const label = `${cat.abbrev} ${r.num} – ${r.desc}`;
+      RULES.push({...r, abbrev:cat.abbrev, category:cat.label, label});
+    });
+  });
+
+  /* ============ STATE ============ */
+  let selectedRule = null;
+  let selectedType = null;   // aktuell aktiver Typ ('jail'|'warn'|'ban')
+  let manualOverride = false; // true sobald Admin "ändern" geklickt hat
+
+  const permidEl = document.getElementById('permid');
+  const ruleSearch = document.getElementById('rule-search');
+  const rulesList = document.getElementById('rules-list');
+  const ruleHint = document.getElementById('rule-hint');
+  const typeDetect = document.getElementById('type-detect');
+  const typePicker = document.getElementById('type-picker');
+  const durationWrap = document.getElementById('duration-wrap');
+  const durationLabel = document.getElementById('duration-label');
+  const durationInput = document.getElementById('duration-input');
+  const durationHint = document.getElementById('duration-hint');
+  const extraEl = document.getElementById('extra');
+  const panelTitle = document.getElementById('panel-title');
+  const cmdText = document.getElementById('cmd-text');
+  const copyBtn = document.getElementById('copy-btn');
+
+  function renderRulesList(){
+    rulesList.innerHTML = '';
+    RULES.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.label;
+      rulesList.appendChild(opt);
+    });
+  }
+
+  function fmtOption(opt){
+    const unit = TYPES[opt.type].unit;
+    if(opt.type === 'warn') return 'Verwarnung';
+    if(typeof opt.duration === 'number'){
+      return TYPES[opt.type].label + ' ' + (opt.duration === PERMANENT_DAYS ? '9999 ' + unit + ' (permanent)' : opt.duration + ' ' + unit);
+    }
+    if(opt.range){
+      const [a,b] = opt.range;
+      const av = a === PERMANENT_DAYS ? 'permanent' : a;
+      const bv = b === PERMANENT_DAYS ? 'permanent (9999)' : b;
+      return TYPES[opt.type].label + ' ' + av + '–' + bv + ' ' + unit;
+    }
+    return TYPES[opt.type].label;
+  }
+
+  function onRuleSearchInput(){
+    const match = RULES.find(r => r.label === ruleSearch.value);
+    selectedRule = match || null;
+    manualOverride = false;
+    selectedType = null;
+
+    if(!selectedRule){
+      ruleHint.textContent = ruleSearch.value.trim() === '' ? 'Noch keine Regel ausgewählt.' : 'Regel nicht gefunden — bitte aus der Liste auswählen.';
+      typeDetect.style.display = 'none';
+      typePicker.classList.remove('visible');
+      durationWrap.style.display = 'none';
+      renderCommand();
+      return;
+    }
+
+    ruleHint.innerHTML = `<b>${selectedRule.category}</b>` + (selectedRule.note ? ' — ' + selectedRule.note : '');
+
+    if(selectedRule.options.length === 1){
+      selectedType = selectedRule.options[0].type;
+    } else {
+      selectedType = null; // muss gewählt werden
+    }
+
+    renderTypeArea();
+    renderDurationField();
+    renderCommand();
+  }
+  ruleSearch.addEventListener('input', onRuleSearchInput);
+
+  function renderTypeArea(){
+    typeDetect.innerHTML = '';
+    typePicker.innerHTML = '';
+
+    if(!selectedRule){
+      typeDetect.style.display = 'none';
+      typePicker.classList.remove('visible');
+      return;
+    }
+
+    const autoDetected = selectedRule.options.length === 1 && !manualOverride;
+
+    if(autoDetected){
+      const opt = selectedRule.options[0];
+      typeDetect.style.background = TYPES[opt.type].bg;
+      typeDetect.style.color = 'var(--ink)';
+      typeDetect.innerHTML = `
+        <span class="type-dot" style="background:${TYPES[opt.type].color}"></span>
+        <span>Erkannt: <b>${fmtOption(opt)}</b></span>
+        <button class="change-link" id="change-type-btn" type="button">ändern</button>
+      `;
+      typeDetect.style.display = 'flex';
+      typePicker.classList.remove('visible');
+      document.getElementById('change-type-btn').addEventListener('click', () => {
+        manualOverride = true;
+        renderTypeArea();
+        renderDurationField();
+        renderCommand();
+      });
+    } else {
+      typeDetect.style.display = 'none';
+      // Auswahl-Optionen: bei mehrdeutigen Regeln nur die hinterlegten Optionen,
+      // bei unbekannten (0 Optionen) alle drei Typen anbieten.
+      const choices = selectedRule.options.length > 0
+        ? selectedRule.options
+        : [{type:'jail'}, {type:'warn'}, {type:'ban'}];
+
+      choices.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'type-pill' + (selectedType === opt.type ? ' active' : '');
+        if(selectedType === opt.type){
+          btn.style.background = TYPES[opt.type].color;
+        }
+        btn.innerHTML = `<span class="dot" style="background:${selectedType === opt.type ? '#fff' : TYPES[opt.type].color}"></span>${selectedRule.options.length > 0 ? fmtOption(opt) : TYPES[opt.type].label}`;
+        btn.addEventListener('click', () => {
+          selectedType = opt.type;
+          durationInput.dataset.userEdited = '';
+          renderTypeArea();
+          renderDurationField();
+          renderCommand();
+        });
+        typePicker.appendChild(btn);
+      });
+      typePicker.classList.add('visible');
+    }
+  }
+
+  function currentOption(){
+    if(!selectedRule || !selectedType) return null;
+    return selectedRule.options.find(o => o.type === selectedType) || null;
+  }
+
+  function renderDurationField(){
+    if(!selectedType || TYPES[selectedType].unit === null){
+      durationWrap.style.display = 'none';
+      return;
+    }
+    durationWrap.style.display = 'block';
+    durationLabel.textContent = TYPES[selectedType].durationLabel;
+    const opt = currentOption();
+    const unit = TYPES[selectedType].unit;
+
+    if(opt && typeof opt.duration === 'number'){
+      durationInput.value = opt.duration;
+      durationInput.readOnly = true;
+      durationHint.textContent = opt.duration === PERMANENT_DAYS
+        ? 'Permanenter Bann laut Regelwerk — automatisch als 9999 Tage eingetragen.'
+        : 'Feste Dauer laut Regelwerk — automatisch eingetragen.';
+    } else if(opt && opt.range){
+      const [a,b] = opt.range;
+      if(!durationInput.dataset.userEdited){ durationInput.value = a; }
+      durationInput.readOnly = false;
+      const av = a === PERMANENT_DAYS ? 'permanent' : a;
+      const bv = b === PERMANENT_DAYS ? 'permanent (9999)' : b;
+      durationHint.textContent = `Regelwerk gibt eine Spanne vor (${av}–${bv} ${unit}) — bitte konkreten Wert eintragen.`;
+    } else {
+      durationInput.readOnly = false;
+      if(!durationInput.dataset.userEdited) durationInput.value = '';
+      durationHint.textContent = 'Keine feste Dauer hinterlegt — bitte Wert manuell eintragen.';
+    }
+  }
+  durationInput.addEventListener('input', () => { durationInput.dataset.userEdited = '1'; renderCommand(); });
+
+  function grundText(){
+    if(!selectedRule) return '[grund]';
+    const extra = extraEl.value.trim();
+    return `${selectedRule.abbrev} ${selectedRule.num}` + (extra ? ' (' + extra + ')' : '');
+  }
+
+  function renderCommand(){
+    if(!selectedType){
+      panelTitle.textContent = 'Maßnahme erfassen';
+      cmdText.innerHTML = 'Bitte Regel auswählen<span class="ph">…</span>';
+      return;
+    }
+    panelTitle.textContent = TYPES[selectedType].label + ' erfassen';
+    const permid = permidEl.value.trim() || '[permid]';
+    const grund = grundText();
+    let text;
+    if(TYPES[selectedType].unit){
+      const dauer = durationInput.value.trim() || '[dauer]';
+      text = `/${selectedType} ${permid} ${dauer} ${grund}`;
+    } else {
+      text = `/${selectedType} ${permid} ${grund}`;
+    }
+    cmdText.textContent = text;
+  }
+
+  permidEl.addEventListener('input', renderCommand);
+  extraEl.addEventListener('input', renderCommand);
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(cmdText.textContent).then(() => {
+      copyBtn.textContent = 'Kopiert';
+      copyBtn.classList.add('copied');
+      setTimeout(() => { copyBtn.textContent = 'Kopieren'; copyBtn.classList.remove('copied'); }, 1600);
+    });
+  });
+
+  renderRulesList();
+  renderCommand();
+</script>
+
+</body>
+</html>
