@@ -24,7 +24,7 @@
     --ban:#E85D6B;   --ban-bg:#FCE6E8;
     --jail:#1FAFA6;  --jail-bg:#DFF6F3;
     --warn:#F2984A;  --warn-bg:#FDECD9;
-    --unknown:#8067AC; --unknown-bg:#EFE7F7;
+    --mute:#8067AC; --mute-bg:#EFE7F7;
 
     --ocean-dark:#123B40;
 
@@ -161,7 +161,7 @@
     <div class="brand">
       <img class="brand-seal" src="logo.webp" alt="Civic Roleplay Logo">
       <div class="brand-text">
-        <div class="eyebrow">Verwaltung &middot; Ordnungsamt</div>
+        <div class="eyebrow">Verwaltung &middot; Civic Roleplay</div>
         <h1>Command-Toolbox</h1>
       </div>
     </div>
@@ -221,6 +221,16 @@
 </div>
 
 <script>
+  /* ============ ZUGANG ============
+     Statt des Klartext-Passworts liegt hier nur der SHA-256-Hash im Code.
+     Trotzdem: rein clientseitige Prüfung, keine echte Sicherheit gegen
+     jemanden, der gezielt den JS-Code manipuliert oder den Hash knackt.
+
+     NEUES PASSWORT SETZEN:
+     1. Browser-Konsole öffnen (F12), dort eintippen:
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode('DEIN-NEUES-PASSWORT'))
+          .then(b => console.log([...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('')))
+     2. Den ausgegebenen Hash kopieren und unten bei ADMIN_PASSWORD_HASH einsetzen. */
   const ADMIN_PASSWORD_HASH = "1940093423442749afdc93cf6811178d5d27402072f71745121a3ad6ac93d413";
 
   async function sha256(text){
@@ -258,7 +268,8 @@
   const TYPES = {
     jail: {label:'Jail', color:'var(--jail)', bg:'var(--jail-bg)', syntax:'/jail [permid] [zeit(in min)] [grund]', unit:'Min', durationLabel:'Zeit (Minuten)'},
     warn: {label:'Verwarnung', color:'var(--warn)', bg:'var(--warn-bg)', syntax:'/warn [permid] [grund]', unit:null, durationLabel:''},
-    ban:  {label:'Bann', color:'var(--ban)', bg:'var(--ban-bg)', syntax:'/ban [permid] [dauer(in tagen)] [grund]', unit:'Tage', durationLabel:'Dauer (Tage)'}
+    ban:  {label:'Bann', color:'var(--ban)', bg:'var(--ban-bg)', syntax:'/ban [permid] [dauer(in tagen)] [grund]', unit:'Tage', durationLabel:'Dauer (Tage)'},
+    mute: {label:'Mute', color:'var(--mute)', bg:'var(--mute-bg)', syntax:'/mute [permid] [dauer(in min)] [grund]', unit:'Min', durationLabel:'Dauer (Minuten)'}
   };
   const PERMANENT_DAYS = 9999;
 
@@ -278,11 +289,11 @@
       {num:'1.8', desc:'Interaktion Haupt-/Twinkaccount', options:[{type:'ban', duration:PERMANENT_DAYS}], note:'Permanente Sperre beider Accounts'},
       {num:'1.9', desc:'Steuerumgehung', options:[{type:'ban', duration:60}]},
       {num:'2.1', desc:'Unrealistischer Ingame-Name', options:[{type:'jail', duration:10}], note:'+ Namensänderung erforderlich'},
-      {num:'3.1', desc:'OOC-Beleidigung', options:[{type:'ban', range:[1,7]}], note:'alternativ Mute 180 Min (kein Command hinterlegt)'},
-      {num:'3.2', desc:'Erwähnung Familienangehörige', options:[{type:'ban', range:[1,7]}], note:'alternativ Mute 180 Min (kein Command hinterlegt)'},
-      {num:'3.3', desc:'Falsche Sprache im Chat', options:[], note:'Regelwerk sieht nur Mute vor (kein Command hinterlegt) — Typ bitte manuell wählen'},
+      {num:'3.1', desc:'OOC-Beleidigung', options:[{type:'mute', duration:180},{type:'ban', range:[1,7]}]},
+      {num:'3.2', desc:'Erwähnung Familienangehörige', options:[{type:'mute', duration:180},{type:'ban', range:[1,7]}]},
+      {num:'3.3', desc:'Falsche Sprache im Chat', options:[{type:'mute', duration:120}]},
       {num:'4.1', desc:'Cheats / externe Software', options:[{type:'ban', range:[60,PERMANENT_DAYS]}]},
-      {num:'5.1', desc:'Report-Missbrauch', options:[], note:'Regelwerk sieht nur Mute vor (kein Command hinterlegt) — Typ bitte manuell wählen'},
+      {num:'5.1', desc:'Report-Missbrauch', options:[{type:'mute', range:[20,60]}]},
       {num:'5.3', desc:'Beleidigung Administration', options:[{type:'ban', duration:7}]},
       {num:'6.2', desc:'RP-Situation verlassen (AFK)', options:[{type:'warn'}]},
       {num:'6.3', desc:'Org-/Familienlager geleert', options:[{type:'ban', duration:PERMANENT_DAYS}], note:'Permanenter Bann'},
@@ -310,7 +321,7 @@
       {num:'6.27', desc:'Schmuggelmaschine verstecken', options:[{type:'ban', range:[1,3]}]},
       {num:'6.29', desc:'Wiederholte Regelverstöße', options:[{type:'ban', range:[1,30]}]},
       {num:'6.30', desc:'Geschlechtswechsel ohne Biografie', options:[{type:'jail', duration:60}], note:'+ Geschlechtsänderung'},
-      {num:'7.4', desc:'Metagaming', options:[{type:'jail', range:[60,180]}], note:'alternativ Mute 60–180 Min (kein Command hinterlegt)'},
+      {num:'7.4', desc:'Metagaming', options:[{type:'jail', range:[60,180]},{type:'mute', range:[60,180]}]},
       {num:'7.5', desc:'Powergaming', options:[{type:'jail', range:[120,180]}]},
       {num:'7.6', desc:'Deathmatch', options:[{type:'jail', range:[120,180]},{type:'warn'}]},
       {num:'7.7', desc:'UN-RP', options:[{type:'jail', range:[120,180]},{type:'warn'}]},
@@ -495,7 +506,7 @@
       // bei unbekannten (0 Optionen) alle drei Typen anbieten.
       const choices = selectedRule.options.length > 0
         ? selectedRule.options
-        : [{type:'jail'}, {type:'warn'}, {type:'ban'}];
+        : [{type:'jail'}, {type:'warn'}, {type:'ban'}, {type:'mute'}];
 
       choices.forEach(opt => {
         const btn = document.createElement('button');
