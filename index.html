@@ -221,10 +221,12 @@
 </div>
 
 <script>
-  /* ============ ZUGANG ============
-     Rein clientseitige Prüfung ohne echte Sicherheit (Quelltext einsehbar).
-     Vor Veröffentlichung unbedingt ändern. */
-  const ADMIN_PASSWORD = "ordnungsamt2026";
+  const ADMIN_PASSWORD_HASH = "1940093423442749afdc93cf6811178d5d27402072f71745121a3ad6ac93d413";
+
+  async function sha256(text){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2,'0')).join('');
+  }
 
   const gate = document.getElementById('gate');
   const app = document.getElementById('app');
@@ -233,8 +235,11 @@
   const gateError = document.getElementById('gate-error');
 
   function unlock(){ gate.style.display = 'none'; app.classList.add('visible'); }
-  function tryLogin(){
-    if(gateInput.value === ADMIN_PASSWORD){
+  async function tryLogin(){
+    gateSubmit.disabled = true;
+    const hash = await sha256(gateInput.value);
+    gateSubmit.disabled = false;
+    if(hash === ADMIN_PASSWORD_HASH){
       sessionStorage.setItem('cr_admin_unlocked','1');
       unlock();
     } else {
